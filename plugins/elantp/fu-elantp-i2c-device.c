@@ -31,7 +31,7 @@ fu_elantp_i2c_device_send_cmd (FuElantpI2cDevice *self,
 		return TRUE;
 	if (!fu_udev_device_pread_full (FU_UDEV_DEVICE (self), 0, rx, rxsz, error))
 		return FALSE;
-	//memcpy (rx,buf, rxsz);
+	//memcpy (rx, buf, rxsz);
 	return TRUE;
 }
 
@@ -184,7 +184,7 @@ fu_elantp_ic2_device_set_quirk_kv (FuDevice *device,
 					     G_IO_ERROR,
 					     G_IO_ERROR_NOT_SUPPORTED,
 					     "ElantpIcPageCount only supports "
-					     "values <= 0xff");
+					     "values <= 0xffff");
 			return FALSE;
 		}
 		self->ic_page_count = (guint16) tmp;
