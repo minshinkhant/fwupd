@@ -419,19 +419,50 @@ fu_vli_pd_device_write_firmware (FuDevice *device,
 	if (!fu_vli_pd_device_write_reg (self, 0x0003, tmp | 0x44, error))
 		return FALSE;
 
-	/* erase */
-	fu_device_set_status (FU_DEVICE (self), FWUPD_STATUS_DEVICE_ERASE);
-	if (!fu_vli_device_spi_erase_all (FU_VLI_DEVICE (self), error))
-		return FALSE;
+	/* TODO implementation of CRC after review 
+	 * fu-vli-pd-firmware.c -> fu_vli_pd_firmware_parse() has CRC check:
+	 * copy over snip or use function? Only CRC is needed to set initial
+	 * address, originally there was no erasing backup FW on VL103. */
+	if (fu_vli_device_get_kind (FU_VLI_DEVICE (device)) == FU_VLI_DEVICE_KIND_VL103 &&
+			fu_device_has_custom_flag (device, "has-backup")) {
+		fu_device_set_status (FU_DEVICE (self), FWUPD_STATUS_DEVICE_WRITE);
+		buf = g_bytes_get_data (fw, &bufsz);
 
-	/* write in chunks */
-	fu_device_set_status (FU_DEVICE (self), FWUPD_STATUS_DEVICE_WRITE);
-	buf = g_bytes_get_data (fw, &bufsz);
-	if (!fu_vli_device_spi_write (FU_VLI_DEVICE (self),
-				      fu_vli_device_get_offset (FU_VLI_DEVICE (self)),
-				      buf, bufsz, error))
-		return FALSE;
+		/*  if FW1 CRC16 check at addr 0x0, size 0xC000 == TRUE, update FW2 first */
+		if (TRUE){
+			if (!fu_vli_device_spi_write (FU_VLI_DEVICE (self),
+						0x10000,
+						buf, bufsz, error))
+				return FALSE;
+			if (!fu_vli_device_spi_write (FU_VLI_DEVICE (self),
+						0x0,
+						buf, bufsz, error))
+				return FALSE;
+		/*  else update FW1 first */
+		}else{		
+			if (!fu_vli_device_spi_write (FU_VLI_DEVICE (self),
+						0x0,
+						buf, bufsz, error))
+				return FALSE;
+			if (!fu_vli_device_spi_write (FU_VLI_DEVICE (self),
+						0x10000,
+						buf, bufsz, error))
+				return FALSE;
+		}
+	}else{
+		/* erase */
+		fu_device_set_status (FU_DEVICE (self), FWUPD_STATUS_DEVICE_ERASE);
+		if (!fu_vli_device_spi_erase_all (FU_VLI_DEVICE (self), error))
+			return FALSE;
 
+		/* write in chunks */
+		fu_device_set_status (FU_DEVICE (self), FWUPD_STATUS_DEVICE_WRITE);
+		buf = g_bytes_get_data (fw, &bufsz);
+		if (!fu_vli_device_spi_write (FU_VLI_DEVICE (self),
+					fu_vli_device_get_offset (FU_VLI_DEVICE (self)),
+					buf, bufsz, error))
+			return FALSE;
+	}
 	/* success */
 	return TRUE;
 }
