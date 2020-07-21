@@ -1,0 +1,21 @@
+# match all devices with this udev subsystem
+[DeviceInstanceId=I2C]
+Plugin = elantp
+GType = FuElantpI2cDevice
+
+[DeviceInstanceId=HIDRAW\VEN_17EF&DEV_6047]
+Plugin = elantp
+GType = FuElantpHidDevice
+
+[DeviceInstanceId=ELANTP\ICTYPE_0A]
+ElantpIcPageCount = 768
+
+[DeviceInstanceId=ELANTP\ICTYPE_09]
+ElantpIcPageCount = 768
+
+[DeviceInstanceId=ELANTP\ICTYPE_0D]
+ElantpIcPageCount = 896
+
+[DeviceInstanceId=ELANTP\ICTYPE_10]
+ElantpIcPageCount = 1024
+Flags = new-pattern
