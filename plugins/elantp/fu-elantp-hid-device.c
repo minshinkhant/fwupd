@@ -123,7 +123,7 @@ fu_elantp_hid_device_ensure_iap_ctrl (FuElantpHidDevice *self, GError **error)
 	self->iap_ctrl = fu_common_read_uint16 (buf, G_LITTLE_ENDIAN);
 
 	/* in IAP mode? */
-	if ((self->iap_ctrl & 0xFFFF) != ETP_FW_IAP_LAST_FIT)
+	if ((self->iap_ctrl & ETP_I2C_MAIN_MODE_ON) == 0)
 		fu_device_add_flag (FU_DEVICE (self), FWUPD_DEVICE_FLAG_IS_BOOTLOADER);
 	else
 		fu_device_remove_flag (FU_DEVICE (self), FWUPD_DEVICE_FLAG_IS_BOOTLOADER);

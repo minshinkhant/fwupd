@@ -153,6 +153,13 @@ fu_elantp_ic2_device_setup (FuDevice *device, GError **error)
 
 g_error ("%s", fu_device_to_string (device));
 
+#if 0
+ --> elan_read_cmd(0x0001) : get hid descriptor command 0x0001
+--> response 30byte data.
+--> vid : buf[20] + buf[21]
+--> pid: buf[22] + buf[23]
+#endif
+
 //	if (g_getenv ("FWUPD_ELANTP_VERBOSE") != NULL)
 //		fu_common_dump_raw (G_LOG_DOMAIN, "IDENTIFY", id, sizeof(id));
 
