@@ -14,6 +14,7 @@
 
 struct _FuElantpI2cDevice {
 	FuUdevDevice		 parent_instance;
+	guint16			 iap_ctrl;
 	guint16			 ic_page_count;
 };
 
@@ -31,11 +32,10 @@ fu_elantp_i2c_device_send_cmd (FuElantpI2cDevice *self,
 		return TRUE;
 	if (!fu_udev_device_pread_full (FU_UDEV_DEVICE (self), 0, rx, rxsz, error))
 		return FALSE;
-	//memcpy (rx, buf, rxsz);
 	return TRUE;
 }
 
-G_GNUC_UNUSED static gint
+G_GNUC_UNUSED static gboolean
 fu_elantp_i2c_device_write_cmd (FuElantpI2cDevice *self, guint16 reg, guint16 cmd, GError **error)
 {
 	guint8 buf[4];
@@ -46,7 +46,7 @@ fu_elantp_i2c_device_write_cmd (FuElantpI2cDevice *self, guint16 reg, guint16 cm
 	return fu_elantp_i2c_device_send_cmd (self, buf, sizeof(buf), NULL, 0, error);
 }
 
-G_GNUC_UNUSED static gint
+G_GNUC_UNUSED static gboolean
 fu_elantp_i2c_device_read_cmd (FuElantpI2cDevice *self, guint16 reg,
 			       guint8 *rx, gsize rxsz, GError **error)
 {
@@ -63,10 +63,17 @@ fu_elantp_i2c_device_read_cmd (FuElantpI2cDevice *self, guint16 reg,
 	return TRUE;
 }
 
-#if 0
-
 static gboolean
-fu_elantp_i2c_device_write_fw_block (FuElantpI2cDevice *self, const guint8 *raw_data, guint16 checksum, GError **error)
+fu_elantp_i2c_device_ensure_iap_ctrl (FuElantpI2cDevice *self, GError **error)
+{
+	return TRUE;
+}
+
+G_GNUC_UNUSED static gboolean
+fu_elantp_i2c_device_write_fw_block (FuElantpI2cDevice *self,
+				     const guint8 *raw_data,
+				     guint16 checksum,
+				     GError **error)
 {
 	guint8 buf[FW_PAGE_SIZE + 4];
 
@@ -75,7 +82,7 @@ fu_elantp_i2c_device_write_fw_block (FuElantpI2cDevice *self, const guint8 *raw_
 	memcpy (buf + 2, raw_data, FW_PAGE_SIZE);
 	fu_common_write_uint16 (buf + FW_PAGE_SIZE + 2, checksum, G_LITTLE_ENDIAN);
 
-	if (!fu_elantp_i2c_device_send_cmd (buf, sizeof (buf), 0, 0, error))
+	if (!fu_elantp_i2c_device_send_cmd (self, buf, sizeof(buf), 0, 0, error))
 		return FALSE;
 	g_usleep (35 * 1000);
 	if (!fu_elantp_i2c_device_ensure_iap_ctrl (self, error))
@@ -89,14 +96,6 @@ fu_elantp_i2c_device_write_fw_block (FuElantpI2cDevice *self, const guint8 *raw_
 		return FALSE;
 	}
 	return TRUE;
-}
-#endif
-
-static void
-fu_elantp_ic2_device_to_string (FuDevice *device, guint idt, GString *str)
-{
-//	FuElantpI2cDevice *self = FU_ELANTP_I2C_DEVICE (device);
-//	fu_common_string_append_kx (str, idt, "TransferMode", self->ic_page_count);
 }
 
 static gboolean
@@ -149,19 +148,26 @@ fu_elantp_ic2_device_probe (FuUdevDevice *device, GError **error)
 static gboolean
 fu_elantp_ic2_device_setup (FuDevice *device, GError **error)
 {
-//	FuElantpI2cDevice *self = FU_ELANTP_I2C_DEVICE (device);
+	FuElantpI2cDevice *self = FU_ELANTP_I2C_DEVICE (device);
+	guint8 buf[30] = { 0x0 };
+	guint32 vid;
+	guint32 pid;
 
-g_error ("%s", fu_device_to_string (device));
+	/* read the HID descriptor */
+	if (!fu_elantp_i2c_device_read_cmd (self, 0x0001, buf, sizeof(buf), error)) {
+		g_prefix_error (error, "failed to get HID descriptor: ");
+		return FALSE;
+	}
+	vid = fu_common_read_uint16 (buf + 20, G_LITTLE_ENDIAN);
+	pid = fu_common_read_uint16 (buf + 22, G_LITTLE_ENDIAN);
 
-#if 0
- --> elan_read_cmd(0x0001) : get hid descriptor command 0x0001
---> response 30byte data.
---> vid : buf[20] + buf[21]
---> pid: buf[22] + buf[23]
-#endif
-
-//	if (g_getenv ("FWUPD_ELANTP_VERBOSE") != NULL)
-//		fu_common_dump_raw (G_LOG_DOMAIN, "IDENTIFY", id, sizeof(id));
+	/* add GUIDs in order of priority */
+	if (vid != 0x0 && pid != 0x0) {
+		g_autofree gchar *devid = NULL;
+		devid = g_strdup_printf ("I2C\\VID_%04X&PID_%04X",
+					 vid, pid);
+		fu_device_add_instance_id (device, devid);
+	}
 
 	/* success */
 	return TRUE;
@@ -230,8 +236,6 @@ fu_elantp_ic2_device_class_init (FuElantpI2cDeviceClass *klass)
 	FuDeviceClass *klass_device = FU_DEVICE_CLASS (klass);
 	FuUdevDeviceClass *klass_udev_device = FU_UDEV_DEVICE_CLASS (klass);
 	object_class->finalize = fu_elantp_ic2_device_finalize;
-	if (0)
-		klass_device->to_string = fu_elantp_ic2_device_to_string;
 	klass_device->set_quirk_kv = fu_elantp_ic2_device_set_quirk_kv;
 	klass_device->setup = fu_elantp_ic2_device_setup;
 	klass_device->write_firmware = fu_elantp_ic2_device_write_firmware;
