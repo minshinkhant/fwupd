@@ -24,11 +24,9 @@ These device uses the standard DeviceInstanceId values, e.g.
 
  * `HIDRAW\VEN_17EF&DEV_6047`
 
-Additionally other instance IDs are added which correspond to the module ID and
-hardware ID, e.g.
+Additionally another instance ID is added which corresponds to the module ID:
 
  * `HIDRAW\VEN_17EF&DEV_6047&MOD_1234`
- * `HIDRAW\VEN_17EF&DEV_6047&HW_43`
 
 These devices also use custom GUID values for the IC configuration, e.g.
 

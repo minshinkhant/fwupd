@@ -20,7 +20,6 @@ struct _FuElantpHidDevice {
 	guint16			 ic_page_count;
 	guint16			 iap_ctrl;
 	guint16			 module_id;
-	guint8			 hardware_id;
 };
 
 G_DEFINE_TYPE (FuElantpHidDevice, fu_elantp_hid_device, FU_TYPE_UDEV_DEVICE)
@@ -31,7 +30,6 @@ fu_elantp_hid_device_to_string (FuDevice *device, guint idt, GString *str)
 {
 	FuElantpHidDevice *self = FU_ELANTP_HID_DEVICE (device);
 	fu_common_string_append_kx (str, idt, "ModuleId", self->module_id);
-	fu_common_string_append_kx (str, idt, "HardwareId", self->hardware_id);
 	fu_common_string_append_kx (str, idt, "IcPageCount", self->ic_page_count);
 	fu_common_string_append_kx (str, idt, "EapCtrl", self->iap_ctrl);
 }
@@ -142,7 +140,6 @@ fu_elantp_hid_device_setup (FuDevice *device, GError **error)
 	guint8 buf[2] = { 0x0 };
 	guint8 ic_type;
 	g_autofree gchar *instance_id1 = NULL;
-	g_autofree gchar *instance_id2 = NULL;
 	g_autofree gchar *instance_id_ic_type = NULL;
 	g_autofree gchar *version_bl = NULL;
 	g_autofree gchar *version = NULL;
@@ -179,26 +176,12 @@ fu_elantp_hid_device_setup (FuDevice *device, GError **error)
 	}
 	self->module_id = fu_common_read_uint16 (buf, G_LITTLE_ENDIAN);
 
-	/* get hardware ID */
-	if (!fu_elantp_hid_device_read_cmd (self,
-					    ETP_GET_HARDWARE_ID_CMD,
-					    buf, sizeof(buf), error)) {
-		g_prefix_error (error, "failed to read hardware ID: ");
-		return FALSE;
-	}
-	self->hardware_id = buf[0];
-
 	/* define the extra instance IDs */
 	instance_id1 = g_strdup_printf ("HIDRAW\\VEN_%04X&DEV_%04X&MOD_%04X",
 					fu_udev_device_get_vendor (udev_device),
 					fu_udev_device_get_model (udev_device),
 					self->module_id);
 	fu_device_add_instance_id (device, instance_id1);
-	instance_id2 = g_strdup_printf ("HIDRAW\\VEN_%04X&DEV_%04X&HW_%02X",
-					fu_udev_device_get_vendor (udev_device),
-					fu_udev_device_get_model (udev_device),
-					self->hardware_id);
-	fu_device_add_instance_id (device, instance_id2);
 
 	/* get OSM version */
 	if (!fu_elantp_hid_device_read_cmd (self, ETP_I2C_OSM_VERSION_CMD, buf, sizeof(buf), error)) {
@@ -243,7 +226,8 @@ fu_elantp_hid_device_prepare_firmware (FuDevice *device,
 				       FwupdInstallFlags flags,
 				       GError **error)
 {
-//	guint16 module_id;
+	FuElantpHidDevice *self = FU_ELANTP_HID_DEVICE (device);
+	guint16 module_id;
 	g_autoptr(FuFirmware) firmware = fu_elantp_firmware_new ();
 
 	/* check size */
@@ -266,11 +250,10 @@ fu_elantp_hid_device_prepare_firmware (FuDevice *device,
 		return NULL;
 	}
 
-	/* check is compatible with firmware */
+	/* check is compatible with hardware */
 	fu_device_set_status (device, FWUPD_STATUS_DECOMPRESSING);
 	if (!fu_firmware_parse (firmware, fw, flags, error))
 		return NULL;
-#if 0
 	module_id = fu_elantp_firmware_get_module_id (FU_ELANTP_FIRMWARE (firmware));
 	if (self->module_id != module_id) {
 		g_set_error (error,
@@ -280,10 +263,8 @@ fu_elantp_hid_device_prepare_firmware (FuDevice *device,
 			     module_id, self->module_id);
 		return NULL;
 	}
-#endif
 
-	/* we could check this against flags */
-//	g_debug ("parsed version: %s", fu_firmware_get_version (firmware));
+	/* success */
 	return g_steal_pointer (&firmware);
 }
 

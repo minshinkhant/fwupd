@@ -52,6 +52,7 @@ fu_elantp_firmware_parse (FuFirmware *firmware,
 	FuElantpFirmware *self = FU_ELANTP_FIRMWARE (firmware);
 	gsize bufsz = 0;
 	guint16 iap_addr_wrds;
+	guint16 module_id_wrds;
 	const guint8 *buf = g_bytes_get_data (fw, &bufsz);
 	g_autoptr(FuFirmwareImage) img = fu_firmware_image_new (fw);
 
@@ -61,15 +62,13 @@ fu_elantp_firmware_parse (FuFirmware *firmware,
 		return FALSE;
 	self->iap_addr = iap_addr_wrds * 2;
 
-	/* sanity check */
-	if (self->iap_addr > bufsz) {
-		g_set_error (error,
-			     FWUPD_ERROR,
-			     FWUPD_ERROR_INVALID_FILE,
-			     "iap_addr invalid 0x%x for 0x%x",
-			     self->iap_addr, (guint) bufsz);
+	/* read module ID */
+	if (!fu_common_read_uint16_safe (buf, bufsz, self->iap_addr,
+					 &module_id_wrds, G_LITTLE_ENDIAN, error))
 		return FALSE;
-	}
+	if (!fu_common_read_uint16_safe (buf, bufsz, module_id_wrds * 2,
+					 &self->module_id, G_LITTLE_ENDIAN, error))
+		return FALSE;
 
 	/* whole image */
 	fu_firmware_add_image (firmware, img);
