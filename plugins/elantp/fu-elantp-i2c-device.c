@@ -22,13 +22,13 @@ G_DEFINE_TYPE (FuElantpI2cDevice, fu_elantp_ic2_device, FU_TYPE_UDEV_DEVICE)
 
 static gboolean
 fu_elantp_i2c_device_send_cmd (FuElantpI2cDevice *self,
-			       guint8 *tx, gint txsz,
-			       guint8 *rx, gint rxsz,
+			       guint8 *tx, gssize txsz,
+			       guint8 *rx, gssize rxsz,
 			       GError **error)
 {
 	if (!fu_udev_device_pwrite_full (FU_UDEV_DEVICE (self), 0, tx, txsz, error))
 		return FALSE;
-	if (rxsz <= 0)
+	if (rxsz == 0)
 		return TRUE;
 	if (!fu_udev_device_pread_full (FU_UDEV_DEVICE (self), 0, rx, rxsz, error))
 		return FALSE;
@@ -51,16 +51,11 @@ fu_elantp_i2c_device_read_cmd (FuElantpI2cDevice *self, guint16 reg,
 			       guint8 *rx, gsize rxsz, GError **error)
 {
 	guint8 buf[2];
-	guint8 buf_tmp[ETP_I2C_INF_LENGTH] = { 0x0 };
 	fu_common_write_uint16 (buf + 0x0, reg, G_LITTLE_ENDIAN);
 	if (g_getenv ("FWUPD_ELANTP_VERBOSE") != NULL)
 		fu_common_dump_raw (G_LOG_DOMAIN, "ReadCmd", buf, sizeof(buf));
-	if (!fu_elantp_i2c_device_send_cmd (self, buf, sizeof(buf),
-					    buf_tmp, sizeof(buf_tmp), error))
-		return FALSE;
-	if (rxsz > 0)
-		memcpy (rx, buf_tmp, rxsz);
-	return TRUE;
+	return fu_elantp_i2c_device_send_cmd (self, buf, sizeof(buf),
+					      rx, rxsz, error);
 }
 
 static gboolean
