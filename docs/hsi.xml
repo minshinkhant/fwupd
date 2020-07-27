@@ -146,6 +146,53 @@
       </para>
     </refsect2>
 
+    <refsect2 id="hsi-level0">
+      <title>HSI:0 (Insecure)</title>
+      <para>
+        The lowest security level with very few detected firmware protections.
+        This is the default security level if no tests can be run or some tests
+        in the next security level have failed.
+      </para>
+    </refsect2>
+
+    <refsect2 id="hsi-level1">
+      <title>HSI:1 (Critical)</title>
+      <para>
+        This security level corresponds to the most basic of security protections
+        considered essential by security professionals.
+        Any failures at this level would have critical security impact.
+      </para>
+    </refsect2>
+
+    <refsect2 id="hsi-level2">
+      <title>HSI:3 (Theoretical)</title>
+      <para>
+        This security level corresponds to firmware security issues that pose a
+        theoretical concern or where any exploit would be difficult or
+        impractical to use.
+        At this level various technologies may be employed to protect the boot
+        process from modification by an attacker with local access to the machine.
+      </para>
+    </refsect2>
+
+    <refsect2 id="hsi-level4">
+      <title>HSI:4 (System Protection)</title>
+      <para>
+        This security level corresponds to out-of-band protection of the system
+        firmware perhaps including recovery.
+      </para>
+    </refsect2>
+
+    <refsect2 id="hsi-level5">
+      <title>HSI:5 (System Attestation)</title>
+      <para>
+        This security level corresponds to out-of-band attestation of the system
+        firmware.
+        There are currently no tests implemented for HSI:5 and so this security
+        level cannot yet be obtained.
+      </para>
+    </refsect2>
+
     <refsect3 id="runtime-u">
       <title>HSI Runtime Suffix <code>U</code></title>
       <para>
@@ -167,6 +214,12 @@
         A runtime security issue detected.
       </para>
       <itemizedlist>
+        <listitem>
+          <para>
+            UEFI <ulink url="https://wiki.ubuntu.com/UEFI/SecureBoot">
+            Secure Boot</ulink> has been turned off. <emphasis>v1.5.0</emphasis>
+          </para>
+        </listitem>
         <listitem>
           <para>
             The kernel is <ulink url="https://www.kernel.org/doc/html/latest/admin-guide/tainted-kernels.html">
@@ -195,13 +248,252 @@
     </refsect3>
 
     <refsect2 id="tests">
-      <title>Formal Specification</title>
+      <title>Tests included in fwupd</title>
       <para>
-        This specification is currently x86 UEFI-centric, but will be expanded
+        The set of tests is currently x86 UEFI-centric, but will be expanded
         in the future for various ARM or RISC-V firmware protections as required.
         Where the requirement is architecture or processor specific it has been noted.
       </para>
     </refsect2>
+
+    <refsect3 id="org.fwupd.hsi.Spi.Bioswe">
+      <title>BIOS Write Enable (BWE)</title>
+      <para>
+        Intel hardware provides this mechanism to protect the SPI ROM chip
+        located on the motherboard from being overwritten by the operating system.
+      </para>
+      <itemizedlist>
+        <listitem>
+          <para>
+            For HSI-1 the ``BIOSWE`` bit must be unset. <emphasis>v1.5.0</emphasis>
+          </para>
+        </listitem>
+      </itemizedlist>
+      <note>
+        <para>
+          See also:
+          <itemizedlist>
+            <listitem>
+              <ulink url="http://www.intel.com/content/www/us/en/chipsets/6-chipset-c200-chipset-datasheet.html">
+                Intel C200 Datasheet
+              </ulink>
+            </listitem>
+          </itemizedlist>
+        </para>
+      </note>
+    </refsect3>
+
+    <refsect3 id="org.fwupd.hsi.Spi.Ble">
+      <title>BIOS Lock Enable (BLE)</title>
+      <para>
+        If the lock bit is set then SMIs are raised when setting BIOS Write Enable.
+        The <code>BLE</code>` bit must be enabled in the PCH otherwise
+        <code>BIOSWE</code> can easily be unset.
+      </para>
+      <itemizedlist>
+        <listitem>
+          <para>
+            For HSI-1 this should be set. <emphasis>v1.5.0</emphasis>
+          </para>
+        </listitem>
+      </itemizedlist>
+      <note>
+        <para>
+          See also:
+          <itemizedlist>
+            <listitem>
+              <ulink url="http://www.intel.com/content/www/us/en/chipsets/6-chipset-c200-chipset-datasheet.html">
+                Intel C200 Datasheet
+              </ulink>
+            </listitem>
+          </itemizedlist>
+        </para>
+      </note>
+    </refsect3>
+
+    <refsect3 id="org.fwupd.hsi.Spi.SmmBwp">
+      <title>SMM Bios Write Protect (SMM_BWP)</title>
+      <para>
+        This bit set defines when the BIOS region can be written by the host.
+        The <code>SMM_BWP</code> bit must be set to make the BIOS region
+        non-writable unless all processors are in system management mode.
+      </para>
+      <itemizedlist>
+        <listitem>
+          <para>
+            For HSI-1 this should be set <emphasis>v1.5.0</emphasis>
+          </para>
+        </listitem>
+      </itemizedlist>
+      <note>
+        <para>
+          See also:
+          <itemizedlist>
+            <listitem>
+              <ulink url="http://www.intel.com/content/www/us/en/chipsets/6-chipset-c200-chipset-datasheet.html">
+                Intel C200 Datasheet
+              </ulink>
+            </listitem>
+          </itemizedlist>
+        </para>
+      </note>
+    </refsect3>
+
+    <refsect3 id="org.fwupd.hsi.Uefi.Dbx">
+      <title>UEFI Secure Boot Revocation database (dbx)</title>
+      <para>
+        The UEFI Secure boot Revocation database is a list of banned hashes that
+        must not be allowed to execute when Secure Boot is turned on.
+        Vulnerabilities like the Kaspersky signed bootloader remove all
+        protections of SecureBoot and this is why an up-to-date dbx is
+        considered such an important part of firmware security.
+      </para>
+      <para>
+        The dbx list is updated infrequently and is normally part of the system
+        firmware updates issued by system manufacturers or operating system vendors.
+      </para>
+      <itemizedlist>
+        <listitem>
+          <para>
+            For HSI-1 this should be provided <emphasis>v1.5.0</emphasis>
+          </para>
+        </listitem>
+      </itemizedlist>
+      <note>
+        <para>
+          See also:
+          <itemizedlist>
+            <listitem>
+              <ulink url="https://docs.microsoft.com/en-us/windows-hardware/manufacture/desktop/windows-secure-boot-key-creation-and-management-guidance">
+                Microsoft Windows Secure Boot Guidance
+              </ulink>
+            </listitem>
+          </itemizedlist>
+        </para>
+      </note>
+    </refsect3>
+
+    <refsect3 id="org.fwupd.hsi.Tpm.Version20">
+      <title>TPM 2.0 Present</title>
+      <para>
+        A TPM securely stores platform specific secrets that can only be divulged
+        to trusted consumers in a secure environment.
+      </para>
+      <itemizedlist>
+        <listitem>
+          <para>
+            For HSI-1 this should be available for use by the OS or applications <emphasis>v1.5.0</emphasis>
+          </para>
+        </listitem>
+      </itemizedlist>
+      <note>
+        <para>
+          See also:
+          <itemizedlist>
+            <listitem>
+              <ulink url="https://en.wikipedia.org/wiki/Trusted_Platform_Module">
+                Wikipedia TPM Article
+              </ulink>
+            </listitem>
+          </itemizedlist>
+        </para>
+      </note>
+    </refsect3>
+
+    <refsect3 id="org.fwupd.hsi.Mei.ManufacturingMode">
+      <title>ME not in manufacturing mode</title>
+      <para>
+        There have been some unfortunate cases of the ME being distributed in
+        manufacturing mode.
+        In manufacturing mode many features from the ME can be interacted with
+        that decrease the platform’s security.
+      </para>
+      <itemizedlist>
+        <listitem>
+          <para>
+            For HSI-1 this should be unset <emphasis>v1.5.0</emphasis>
+          </para>
+        </listitem>
+      </itemizedlist>
+      <note>
+        <para>
+          See also:
+          <itemizedlist>
+            <listitem>
+              <ulink url="http://blog.ptsecurity.com/2018/10/intel-me-manufacturing-mode-macbook.html">
+                ME Manufacturing Mode: obscured dangers
+              </ulink>
+            </listitem>
+            <listitem>
+              <ulink url="https://www.intel.com/content/www/us/en/security-center/advisory/intel-sa-00086.html">
+                Intel security advisory SA-00086
+              </ulink>
+            </listitem>
+          </itemizedlist>
+        </para>
+      </note>
+    </refsect3>
+
+    <refsect3 id="org.fwupd.hsi.Mei.OverrideStrap">
+      <title>ME Flash Descriptor Override</title>
+      <para>
+        The Flash Descriptor Security Override Strap is not accessible to end
+        users on consumer boards and Intel stresses that this is for debugging only.
+      </para>
+      <itemizedlist>
+        <listitem>
+          <para>
+            For HSI-1 this should be unset <emphasis>v1.5.0</emphasis>
+          </para>
+        </listitem>
+      </itemizedlist>
+      <note>
+        <para>
+          See also:
+          <itemizedlist>
+            <listitem>
+              <ulink url="https://chromium.googlesource.com/chromiumos/third_party/flashrom/+/master/Documentation/mysteries_intel.txt">
+                Chromium documentation for Intel ME
+              </ulink>
+            </listitem>
+          </itemizedlist>
+        </para>
+      </note>
+    </refsect3>
+
+    <refsect3 id="org.fwupd.hsi.Mei.Version">
+      <title>CSME Version</title>
+      <para>
+        Converged Security and Manageability Engine is a standalone management
+        module that can manage and control all the local devices without the host
+        CPU involvement.
+        The CSME lives in the PCH and can only be updated by the OEM vendor.
+        The version of the CSME module can be checked to detect the most common
+        and serious vulnerabilities.
+      </para>
+      <itemizedlist>
+        <listitem>
+          <para>
+            For HSI-1 this should not be vulnerable to CVE-2017-5705, CVE-2017-5708,
+            CVE-2017-5711, CVE-2017-5712, CVE-2017-5711, CVE-2017-5712, CVE-2017-5706,
+            CVE-2017-5709, CVE-2017-5707 or CVE-2017-5710 <emphasis>v1.5.0</emphasis>
+          </para>
+        </listitem>
+      </itemizedlist>
+      <note>
+        <para>
+          See also:
+          <itemizedlist>
+            <listitem>
+              <ulink url="https://www.intel.com/content/www/us/en/security-center/advisory/intel-sa-00086.html">
+                Intel CSME Security Review Cumulative Update
+              </ulink>
+            </listitem>
+          </itemizedlist>
+        </para>
+      </note>
+    </refsect3>
+
 
     <refsect3 id="org.fwupd.hsi.IntelDci">
       <title>Intel DCI</title>
@@ -222,10 +514,9 @@
           </para>
         </listitem>
       </itemizedlist>
-      <!-- sources -->
       <note>
         <para>
-          See also: 
+          See also:
           <itemizedlist>
             <listitem>
               <ulink url="https://www.intel.co.uk/content/www/uk/en/support/articles/000029393/processors.html">
@@ -247,31 +538,256 @@
       </note>
     </refsect3>
 
-    <refsect3 id="org.fwupd.hsi.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX">
-      <title>XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX</title>
+    <refsect3 id="org.fwupd.hsi.Tpm.ReconstructionPcr0">
+      <title>PCR0 TPM Event Log Reconstruction</title>
       <para>
-        XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX.
+        The TPM event log records which events are registered for the PCR0 hash.
+        When reconstructed the event log values should always match the TPM PCR0.
+        If extra events are included in the event log, or some are missing,
+        the reconstitution will fail.
       </para>
       <itemizedlist>
         <listitem>
           <para>
-            For HSI-1 this should be XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX. <emphasis>v1.5.0</emphasis>
+            For HSI-2 this should match the TPM-provided PCR0 <emphasis>v1.5.0</emphasis>
           </para>
         </listitem>
       </itemizedlist>
-      <!-- sources -->
       <note>
         <para>
-          See also: 
+          See also:
           <itemizedlist>
             <listitem>
-              <ulink url="https://XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX">
-                XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+              <ulink url="https://www.kernel.org/doc/html/latest/security/tpm/tpm_event_log.html">
+                Linux Kernel TPM Documentation
               </ulink>
             </listitem>
           </itemizedlist>
         </para>
       </note>
+    </refsect3>
+    <refsect3 id="org.fwupd.hsi.AcpiDmar">
+      <title>Kernel DMA protection</title>
+      <para>
+        The IOMMU on modern systems is used to mitigate against DMA attacks.
+        All I/O for devices capable of DMA is mapped into a private virtual
+        memory region.
+        Common implementations are Intel VT-d and AMD-Vi.
+      </para>
+      <itemizedlist>
+        <listitem>
+          <para>
+            For HSI-2 this should be available <emphasis>v1.5.0</emphasis>
+          </para>
+        </listitem>
+      </itemizedlist>
+      <note>
+        <para>
+          See also:
+          <itemizedlist>
+            <listitem>
+              <ulink url="https://en.wikipedia.org/wiki/Input%E2%80%93output_memory_management_unit">
+                Wikipedia IOMMU article
+              </ulink>
+            </listitem>
+          </itemizedlist>
+        </para>
+      </note>
+    </refsect3>
+
+    <refsect3 id="org.fwupd.hsi.IntelBootguard">
+      <title>Intel BootGuard</title>
+      <para>
+        BootGuard is a processor feature that prevents the machine from running
+        firmware images not released by the system manufacturer.
+        It forms a root-of-trust by fusing in cryptographic keys into the processor
+        itself that are used to verify the Authenticated Code Modules found in
+        the SPI flash.
+      </para>
+      <itemizedlist>
+        <listitem>
+          <para>
+            For HSI-1 verified boot must be enabled with ACM protection. <emphasis>v1.5.0</emphasis>
+          </para>
+        </listitem>
+        <listitem>
+          <para>
+            For HSI-2 the error enforcement policy must be set to “immediate shutdown”. <emphasis>v1.5.0</emphasis>
+          </para>
+        </listitem>
+      </itemizedlist>
+      <note>
+        <para>
+          See also:
+          <itemizedlist>
+            <listitem>
+              <ulink url="https://github.com/coreboot/coreboot/blob/master/src/soc/intel/jasperlake/include/soc/me.h">
+                Coreboot documentation
+              </ulink>
+            </listitem>
+          </itemizedlist>
+        </para>
+      </note>
+    </refsect3>
+
+    <refsect3 id="org.fwupd.hsi.SuspendToRam">
+      <title>Suspend to RAM disabled</title>
+      <para>
+        Suspend to Ram (S3) keeps the raw contents of the DRAM refreshed when
+        the system is asleep.
+        This means that the memory modules can be physically removed and the
+        contents recovered, or a cold boot attack can be performed with a USB device.
+      </para>
+      <itemizedlist>
+        <listitem>
+          <para>
+            For HSI-3 the firmware should be configured to prefer using suspend
+            to idle instead of suspend to ram or to not offer suspend to
+            RAM. <emphasis>v1.5.0</emphasis>
+          </para>
+        </listitem>
+      </itemizedlist>
+      <note>
+        <para>
+          See also:
+          <itemizedlist>
+            <listitem>
+              <ulink url="https://en.wikipedia.org/wiki/Cold_boot_attack">
+                Wikipedia article on cold boot attacks
+              </ulink>
+            </listitem>
+          </itemizedlist>
+        </para>
+      </note>
+    </refsect3>
+
+    <refsect3 id="org.fwupd.hsi.IntelCet">
+      <title>Intel CET Available</title>
+      <para>
+        Control enforcement technology is available on new Intel platforms and
+        prevents exploits from hijacking the control-flow transfer instructions
+        for both forward-edge (indirect call/jmp) and back-edge transfer (ret).
+      </para>
+      <itemizedlist>
+        <listitem>
+          <para>
+            For HSI-3 this should be available and enabled <emphasis>v1.5.0</emphasis>
+          </para>
+        </listitem>
+      </itemizedlist>
+      <note>
+        <para>
+          See also:
+          <itemizedlist>
+            <listitem>
+              <ulink url="https://software.intel.com/sites/default/files/managed/4d/2a/control-flow-enforcement-technology-preview.pdf">
+                Intel CET Technology Preview
+              </ulink>
+            </listitem>
+          </itemizedlist>
+        </para>
+      </note>
+    </refsect3>
+
+    <refsect3 id="org.fwupd.hsi.EncryptedRam">
+      <title>DRAM total memory encryption (TME)</title>
+      <para>
+        Total memory encryption technology is used by the firmware on supported
+        SOCs to encrypt all data on external memory buses.
+        It mitigates against an attacker being able to capture memory data while
+        the system is running or to capture memory by removing a DRAM chip.
+      </para>
+      <itemizedlist>
+        <listitem>
+          <para>
+            For HSI-4 this should be supported and enabled <emphasis>v1.5.0</emphasis>
+          </para>
+        </listitem>
+      </itemizedlist>
+      <note>
+        <para>
+          See also:
+          <itemizedlist>
+            <listitem>
+              <ulink url="https://software.intel.com/content/www/us/en/develop/blogs/intel-releases-new-technology-specification-for-memory-encryption.html">
+                Intel TME Press Release
+              </ulink>
+            </listitem>0
+          </itemizedlist>
+        </para>
+      </note>
+    </refsect3>
+    <refsect3 id="org.fwupd.hsi.IntelSmap">
+      <title>Supervisor Mode Access Prevention</title>
+      <para>
+        Without Supervisor Mode Access Prevention, the supervisor code usually
+        has full read and write access to user-space memory mappings.
+        This can make exploits easier to write, as it allows the kernel to
+        access user-space memory when it did not intend to.
+      </para>
+      <itemizedlist>
+        <listitem>
+          <para>
+            For HSI-4 the SMAP and SMEP features should be available on the CPU. <emphasis>v1.5.0</emphasis>
+          </para>
+        </listitem>
+      </itemizedlist>
+      <note>
+        <para>
+          See also:
+          <itemizedlist>
+            <listitem>
+              <ulink url="https://en.wikipedia.org/wiki/Supervisor_Mode_Access_Prevention">
+                Wikipedia SMAP Article
+              </ulink>
+            </listitem>
+          </itemizedlist>
+        </para>
+      </note>
+    </refsect3>
+
+    <refsect3 id="org.fwupd.hsi.Iommu">
+      <title>Kernel DMA protection</title>
+      <para>
+        The IOMMU on modern systems is used to mitigate against DMA attacks.
+        All I/O for devices capable of DMA is mapped into a private virtual
+        memory region.
+        Common implementations are Intel VT-d and AMD-Vi.
+      </para>
+      <itemizedlist>
+        <listitem>
+          <para>
+            For HSI-2 this should be available for use. <emphasis>v1.5.0</emphasis>
+          </para>
+        </listitem>
+      </itemizedlist>
+      <note>
+        <para>
+          See also:
+          <itemizedlist>
+            <listitem>
+              <ulink url="https://en.wikipedia.org/wiki/Input%E2%80%93output_memory_management_unit">
+                Wikipedia IOMMU article
+              </ulink>
+            </listitem>
+          </itemizedlist>
+        </para>
+      </note>
+    </refsect3>
+
+    <refsect3 id="org.fwupd.hsi.SuspendToIdle">
+      <title>Suspend-to-Idle</title>
+      <para>
+        The platform should be set up with Suspend-to-Idle as the default S3
+        sleep state.
+      </para>
+      <itemizedlist>
+        <listitem>
+          <para>
+            For HSI-3 this should be set <emphasis>v1.5.0</emphasis>
+          </para>
+        </listitem>
+      </itemizedlist>
     </refsect3>
 
     <refsect1 id="conclusions">
@@ -322,6 +838,19 @@
       <para>
         This security functionality requires a binary blob to operate.
         It is not widely used and its presence is not tested.
+      </para>
+    </refsect3>
+    <refsect3 id="intel-sgx">
+      <title>Intel SGX</title>
+      <para>
+        This is not widely used as it has several high severity security issues.
+      </para>
+    </refsect3>
+    <refsect3 id="intel-mpx">
+      <title>Intel MPX</title>
+      <para>
+        MPX support has now been removed from popular compilers and the kernel
+        several years ago and it is now considered obsolete.
       </para>
     </refsect3>
 
