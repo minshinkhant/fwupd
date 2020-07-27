@@ -1,0 +1,346 @@
+<?xml version="1.0"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN"
+               "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd">
+<reference id="hsi">
+  <title>Host Security ID Specification</title>
+  <warning>
+    <para>
+      This specification is still in active development: it is incomplete,
+      subject to change, and may have errors; use this at your own risk.
+      It is based on publicly available information.
+    </para>
+  </warning>
+
+<!--
+  <info>
+    <authorgroup>
+      <author>
+        <personname>
+          <firstname>Richard</firstname>
+          <surname>Hughes</surname>
+        </personname>
+        <affiliation>
+          <orgname>Red Hat</orgname>
+        </affiliation>
+      </author>
+      <author>
+        <personname>
+          <firstname>Mario</firstname>
+          <surname>Limonciello</surname>
+        </personname>
+        <affiliation>
+          <orgname>Dell</orgname>
+        </affiliation>
+      </author>
+      <author>
+        <personname>
+          <firstname>Alex</firstname>
+          <surname>Bazhaniuk</surname>
+        </personname>
+        <affiliation>
+          <orgname>Eclypsium</orgname>
+        </affiliation>
+      </author>
+      <author>
+        <personname>
+          <firstname>Alex</firstname>
+          <surname>Matrosov</surname>
+        </personname>
+        <affiliation>
+          <orgname>Nvidia</orgname>
+        </affiliation>
+      </author>
+    </authorgroup>
+  </info>
+-->
+
+  <partintro>
+
+    <refsect1 id="introduction">
+      <title>Introduction</title>
+      <para>
+        Not all system vendors prioritize building a secure platform.
+        The truth is that <emphasis role="strong">security costs money</emphasis>.
+        Vendors have to choose between saving a few cents on a bill-of-materials
+        by sharing a SPI chip, or correctly implementing BootGuard.
+        Discovering security vulnerabilities often takes an external researcher
+        filing a disclosure.
+        These disclosures are often technical in nature and difficult for an
+        average consumer to decipher.
+      </para>
+      <para>
+        The Linux Vendor Firmware Service (LVFS) could provide some
+        <emphasis role="strong">easy-to-understand</emphasis> information to
+        people buying hardware.
+        The service already knows a huge amount of information about machines
+        from signed reports uploaded to the LVFS and from analyzing firmware binaries.
+        However this information alone does not explain firmware security to the
+        user in a way they can actually interpret.
+      </para>
+    </refsect1>
+
+    <refsect2 id="existing-tooling">
+      <title>Existing Tooling</title>
+      <para>
+        Today figuring out the true security of your hardware and firmware
+        requires sifting through the marketing documentation provided by the
+        OEM and in many cases just “trusting” they did it right.
+        Tools such as Chipsec can check the hardware configuration, but they do
+        not work out of the box and use technical jargon that an average user
+        cannot interpret.
+        Unfortunately, running a tool like Chipsec requires that you actively
+        turn off some security layers such as UEFI Secure Boot, and allow 3rd
+        party unsigned kernel modules to be loaded.
+      </para>
+    </refsect2>
+
+    <refsect1 id="verifying">
+      <title>Verifying Host Firmware Security</title>
+      <para>
+        To start out some core protections must be assigned a relative importance.
+        Then an evaluation must be done to determine how each vendor is conforming
+        to the model.
+        For instance, a user might say that for home use any hardware the bare
+        minimum security level (<code>HSI:1</code>) is <emphasis>good enough</emphasis>.
+        For a work laptop the company IT department might restrict the choice of
+        models to anything meeting the criteria of level <code>HSI:2</code> or
+        above.
+        A journalist or a security researcher would only buy level <code>HSI:3</code>
+        and above.
+        The reality is that <code>HSI:4</code> is going to be more expensive
+        than some unbranded hardware that is rated <code>HSI:0</code>.
+      </para>
+      <para>
+        To be trusted, this rating information should be distributed in a
+        centralized agnostic database such as the LVFS.
+      </para>
+      <para>
+        Of course, tools need to detect implementation errors, and to verify that
+        the model that is measured does indeed match the HSI level advertised by
+        the LVFS.
+        Some existing compliance solutions place the burden on the OEM to define
+        what firmware security has been implemented, which is easy to get wrong
+        and in some cases impossible to verify.
+      </para>
+      <para>
+        For this reason HSI will only measure security protections that can be
+        verified by the end user without requiring any extra hardware to be
+        connected, additional software to be installed, or disabling any existing
+        security layers to measure.
+      </para>
+    </refsect1>
+
+    <refsect2 id="runtime-behaviour">
+      <title>Runtime Behavior</title>
+      <para>
+        Orthogonal to the security features provided by the firmware there are
+        other security considerations related to the firmware which may require
+        internet access to discover or that runtime OS changes directly affect
+        the security of the firmware.
+        It would not make sense to have <emphasis>“have updates on the LVFS”</emphasis>
+        as a requirement for a specific security level as this would mean
+        offline the platform might be a higher level initially but as soon as
+        it is brought online it is downgraded which would be really confusing to
+        users.
+        The “core” security level will not change at runtime, but the suffix may.
+      </para>
+    </refsect2>
+
+    <refsect3 id="runtime-u">
+      <title>HSI Runtime Suffix <code>U</code></title>
+      <para>
+        Updates available on the <ulink url="https://fwupd.org/">
+        Linux Vendor Firmware Service </ulink> which are less than 12 months old.
+      </para>
+    </refsect3>
+
+    <refsect3 id="runtime-a">
+      <title>HSI Runtime Suffix <code>A</code></title>
+      <para>
+        Attestation data is available to verify the current PCR0 TPM hash.
+      </para>
+    </refsect3>
+
+    <refsect3 id="runtime-bang">
+      <title>HSI Runtime Suffix <code>!</code></title>
+      <para>
+        A runtime security issue detected.
+      </para>
+      <itemizedlist>
+        <listitem>
+          <para>
+            The kernel is <ulink url="https://www.kernel.org/doc/html/latest/admin-guide/tainted-kernels.html">
+            tainted</ulink> due to a non-free module or critical firmware issue. <emphasis>v1.5.0</emphasis>
+          </para>
+        </listitem>
+        <listitem>
+          <para>
+            The kernel is not not <ulink url="https://mjg59.dreamwidth.org/50577.html">
+            locked down</ulink>. <emphasis>v1.5.0</emphasis>
+          </para>
+        </listitem>
+        <listitem>
+          <para>
+            Unencrypted <ulink url="https://wiki.archlinux.org/index.php/Dm-crypt/Swap_encryption">
+            swap partition</ulink>. <emphasis>v1.5.0</emphasis>
+          </para>
+        </listitem>
+        <listitem>
+          <para>
+            The installed fwupd is running with <ulink url="https://github.com/fwupd/fwupd/tree/master/plugins">
+            custom or modified plugins</ulink>. <emphasis>v1.5.0</emphasis>
+          </para>
+        </listitem>
+      </itemizedlist>
+    </refsect3>
+
+    <refsect2 id="tests">
+      <title>Formal Specification</title>
+      <para>
+        This specification is currently x86 UEFI-centric, but will be expanded
+        in the future for various ARM or RISC-V firmware protections as required.
+        Where the requirement is architecture or processor specific it has been noted.
+      </para>
+    </refsect2>
+
+    <refsect3 id="org.fwupd.hsi.IntelDci">
+      <title>Intel DCI</title>
+      <para>
+        Newer Intel CPUs support debugging over USB3 via a proprietary Direct
+        Connection Interface (DCI) with the use of off-the-shelf hardware.
+        DCI should always be disabled and locked on production hardware.
+      </para>
+      <itemizedlist>
+        <listitem>
+          <para>
+            For HSI-1 this should be disabled. <emphasis>v1.5.0</emphasis>
+          </para>
+        </listitem>
+        <listitem>
+          <para>
+            For HSI-2 this should be locked. <emphasis>v1.5.0</emphasis>
+          </para>
+        </listitem>
+      </itemizedlist>
+      <!-- sources -->
+      <note>
+        <para>
+          See also: 
+          <itemizedlist>
+            <listitem>
+              <ulink url="https://www.intel.co.uk/content/www/uk/en/support/articles/000029393/processors.html">
+                Intel Direct Connect Interface
+              </ulink>
+            </listitem>
+            <listitem>
+              <ulink url="https://github.com/chipsec/chipsec/blob/master/chipsec/cfg/8086/pch_4xxlp.xml#L270">
+                Chipsec 4xxlp register definitions
+              </ulink>
+            </listitem>
+            <listitem>
+              <ulink url="https://github.com/riscv/riscv-edk2-platforms/blob/85a50de1b459d1d6644a402081120770aa6dd8c7/Silicon/Intel/CoffeelakeSiliconPkg/Pch/Include/Register/PchRegsDci.h">
+                RISC-V EDK PCH register definitions
+              </ulink>
+            </listitem>
+          </itemizedlist>
+        </para>
+      </note>
+    </refsect3>
+
+    <refsect3 id="org.fwupd.hsi.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX">
+      <title>XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX</title>
+      <para>
+        XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX.
+      </para>
+      <itemizedlist>
+        <listitem>
+          <para>
+            For HSI-1 this should be XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX. <emphasis>v1.5.0</emphasis>
+          </para>
+        </listitem>
+      </itemizedlist>
+      <!-- sources -->
+      <note>
+        <para>
+          See also: 
+          <itemizedlist>
+            <listitem>
+              <ulink url="https://XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX">
+                XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+              </ulink>
+            </listitem>
+          </itemizedlist>
+        </para>
+      </note>
+    </refsect3>
+
+    <refsect1 id="conclusions">
+      <title>Conclusion</title>
+      <para>
+        Any system with a Host Security ID of <code>0</code> can easily be
+        modified from userspace.
+        PCs with confidential documents should have a <code>HSI:3</code> or
+        higher level of protection.
+        In a graphical tool that would show details about the computer (such as
+        GNOME Control Center’s details tab) the OS could display a field
+        indicating Host Security ID.
+        The ID should be shown with an alert color if the security is not at
+        least <code>HSI:1</code> or the suffix is <code>!</code>.
+      </para>
+      <para>
+        On Linux <code>fwupd</code> is used to enumerate and update firmware.
+        It exports a property <code>HostSecurityId</code> and a
+        <code>GetHostSecurityAttrs()</code> method.
+        The attributes are supposed to represent the <emphasis>system as a whole</emphasis>
+        but individual (internal) devices are able to make a claim that they
+        worsened the state of the security of the system.
+        Certain attributes can “obsolete” other attributes.
+        An example is BIOSGuard will set obsoletes to <code>org.intel.prx</code>.
+      </para>
+      <para>
+        A plugin method gets called on each plugin which adds attributes directly
+        from the hardware or kernel.
+        Several attributes may be dependent upon the kernel performing measurements
+        and it will take time for these to be upstreamed.
+        In some cases security level measurements will only be possible on systems
+        with a newer kernel.
+      </para>
+      <para>
+        The long term goal is to increase the <code>HSI:x</code> level of systems
+        being sold to consumers.
+        By making some of the <code>HSI:x</code> attributes part of the LVFS
+        uploaded report we can allow users to compare vendors and models before
+        purchasing hardware.
+      </para>
+    </refsect1>
+
+    <refsect2 id="ommissions">
+      <title>Intentional Omissions</title>
+    </refsect2>
+    <refsect3 id="intel-txt">
+      <title>Intel TXT</title>
+      <para>
+        This security functionality requires a binary blob to operate.
+        It is not widely used and its presence is not tested.
+      </para>
+    </refsect3>
+
+    <refsect1 id="further-work">
+      <title>Further Work</title>
+      <para>
+        More internal and external devices should be factored into the security
+        equation.
+        For now the focus for further tests should be around internal device
+        firmware as it is what can be most directly controlled by fwupd and the
+        hardware manufacturer.
+      </para>
+      <para>
+        Security conscious manufacturers are actively participating in the
+        development of future initiatives in the Trusted Computing Group (TCG).
+        As those become ratified standards that are available in hardware,
+        there are opportunities for synergy with this specification.
+      </para>
+    </refsect1>
+
+  </partintro>
+</reference>
