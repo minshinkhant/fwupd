@@ -1,19 +1,19 @@
 Cypress support
 ===============
 
-1. Introduction
-=====================================================
+Introduction
+------------
 
 This plugin can flash firmware on Cypress CCGx USB-C controller family of
-devices used in dock.
+devices used in docks.
 
-2. Firmware Format
-=====================================================
+Firmware Format
+===============
 
 There are two kinds of firmware format.
 
 Cyacd firmware format
------------------------------
+---------------------
 
 The daemon will decompress the cabinet archive and extract several firmware
 blobs in cyacd file format. See https://community.cypress.com/docs/DOC-10562
@@ -24,7 +24,7 @@ This plugin supports the following protocol ID:
  * com.cypress.ccgx
  
 DMC composite firmware format
---------------------------------------------
+-----------------------------
 
 The daemon will decompress the cabinet archive and extract several firmware
 blobs in a combined image file format. See 4.4.1 Single Composite
@@ -35,8 +35,8 @@ This plugin supports the following protocol ID:
 
  * com.cypress.ccgx.dmc
 
-3. GUID Generation
-=======================================================
+GUID Generation
+===============
 
 These devices use the standard USB DeviceInstanceId values, e.g.
 
@@ -51,18 +51,18 @@ application ID and device mode, e.g.
 * `USB\VID_1234&PID_5678&SID_9ABC&APP_DEF1&MODE_FW2`
 
 Vendor ID Security
--------------------------
+------------------
 
 The vendor ID is set from the USB vendor, for example set to `USB:0x04B4`
 
-4. Device Flash
-=======================================================
+Device Flash
+============
 
 There are four kinds of flash layout. Single image firmware is not currently
 supported in this plugin.
 
 Symmetric Firmware
-----------------------------
+------------------
 
 In symmetric firmware topology, FW1 and FW2 are both primary (main) firmware
 with identical sizes and functionality. We can only update FW1 from FW2 or FW2
@@ -73,7 +73,7 @@ After updating the "other" firmware we can just use `CY_PD_DEVICE_RESET_CMD_SIG`
 to reboot into the new firmware, and no further action is required.
 
 Asymmetric Firmware
------------------------------
+-------------------
 
 In asymmetric firmware topology, FW1 is backup and FW2 is primary (main)
 firmware with different firmware sizes. The backup firmware may not support all
@@ -93,12 +93,8 @@ Case 2: FW1 is running (recovery case)
 The `CY_PD_JUMP_TO_ALT_FW_CMD_SIG` command is allowed only in asymmetric FW, but
 `CY_PD_DEVICE_RESET_CMD_SIG` is allowed in both asymmetric FW and symmetric FW.
 
-
 DMC(Dock Management Controller) Composite Firmware
------------------------------------------------------------------------------
+--------------------------------------------------
 
 In composite firmware topology, a single firmware image contains metadata and
 firmware images of multiple devices including DMC itself in a dock system.
-
-
-
